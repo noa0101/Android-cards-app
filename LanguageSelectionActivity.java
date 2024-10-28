@@ -26,6 +26,7 @@ public class LanguageSelectionActivity extends AppCompatActivity {
 
     private ListView languageListView;
     private List<String> languageList = new ArrayList<>();
+    private Intent incomingIntent;
 
     // Retrofit API Interface for LibreTranslate
     public interface LibreTranslateApiService {
@@ -54,6 +55,9 @@ public class LanguageSelectionActivity extends AppCompatActivity {
 
         languageListView = findViewById(R.id.languageListView);
 
+        // Retrieve the vocabName from the incoming intent
+        incomingIntent = getIntent();
+
         // Fetch and display the list of languages
         fetchLanguages();
 
@@ -63,9 +67,13 @@ public class LanguageSelectionActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String selectedLanguage = languageList.get(position);
 
-                // Pass the selected language back to the MainActivity
+                // Pass the selected language and vocabName (if exists) back to the MainActivity
                 Intent resultIntent = new Intent();
+                if(incomingIntent.getExtras() != null)
+                    resultIntent.putExtras(incomingIntent.getExtras());
                 resultIntent.putExtra("selectedLanguage", selectedLanguage);
+
+
                 setResult(RESULT_OK, resultIntent);
                 finish();
             }

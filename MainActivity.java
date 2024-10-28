@@ -3,6 +3,7 @@ package com.example.cards_firsttry;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -11,9 +12,17 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.Manifest;
+import androidx.annotation.NonNull; // for NonNull annotation
+import androidx.core.app.ActivityCompat; // for requesting permissions
+import androidx.core.content.ContextCompat; // for checking permissions
+import android.content.pm.PackageManager; // for PackageManager
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 
@@ -22,6 +31,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int NATIVE_LANGUAGE_REQUEST_CODE = 1;
     private static final int VOCAB_LANGUAGE_REQUEST_CODE = 2;
     private static final int TEXT_LANGUAGE_REQUEST_CODE = 3;
+    private static final int PERMISSION_REQUEST_CODE = 4;
+
+    private static final String PERMISSION_READ_STORAGE = Manifest.permission.READ_EXTERNAL_STORAGE;
+
     private static final int VOCAB_MODE = 0;
     private static final int TEXTS_MODE = 1;
 
@@ -131,8 +144,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void gotoText(String name){
+        System.out.println("in gotoText");
         Intent intent = new Intent(MainActivity.this, TextActivity.class);
         intent.putExtra("fileName", name);
+        intent.putExtra("content", filesManager.getFile(name));
+        intent.putExtra("language", filesManager.getFileLanguage(name));
+        System.out.println("now in middle");
         startActivity(intent);
     }
 
@@ -144,6 +161,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void addText(){
+        /*
+        System.out.println("in addText");
+        if (!checkStoragePermission()) {
+            System.out.println("asking permission");
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
+            System.out.println("finished");
+
+            return;
+        }
+        */
         final EditText input = new EditText(this);
 
         AlertDialog.Builder dialog = new AlertDialog.Builder(this);
@@ -159,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(MainActivity.this, "File with name " + name + " already exists.", Toast.LENGTH_SHORT).show();
                             }
                             else {
-                                getFilePath(name);
+                                getFileContent(name);
                             }
                         }
                         else{
@@ -171,6 +198,30 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
+    public void getFileContent(String filename){
+        final EditText input = new EditText(this);
+
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setTitle("enter file content")
+                .setMessage("Please enter file content")
+                .setView(input)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String cont = input.getText().toString().trim();
+                        if (!cont.isEmpty()) {
+                            getFileLng(filename, cont);
+                        }
+
+                        else{
+                            Toast.makeText(MainActivity.this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+/*
     public void getFilePath(String filename){
         final EditText input = new EditText(this);
 
@@ -198,7 +249,7 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
-    }
+    }*/
 
     private void getFileLng(String name, String path) {
         System.out.println("in getFileLng");
@@ -219,6 +270,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void add(View view){
+        System.out.println("in add");
         if(mode == VOCAB_MODE)
             addVocab();
         else
@@ -274,7 +326,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 else if(requestCode==TEXT_LANGUAGE_REQUEST_CODE){
-                    System.out.println("in activity");
                     String name = data.getStringExtra("textName");
                     String path = data.getStringExtra("filePath");
 
@@ -288,4 +339,29 @@ System.out.println("1");
             }
         }
     }
+
+    private boolean checkStoragePermission() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestStoragePermission() {
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            System.out.println("in if");
+            System.out.println(grantResults.length);
+            System.out.println(grantResults[0]);
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                addText(); // Call addText method again if permission was granted
+            } else {
+                System.out.println("in else");
+                Toast.makeText(this, "Permission denied to read your External storage", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
 }
